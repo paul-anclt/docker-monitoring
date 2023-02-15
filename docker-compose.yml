@@ -1,17 +1,32 @@
 version: '3.8'
 services:
   cadvisor:
-    image: google/cadvisor
+    image: gcr.io/cadvisor/cadvisor
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+    command:
+      - --storage_duration=12h00m00s
     expose:
       - 8080
     ports:
       - "8005:8080"
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    volumes:
+      - "./docker/alertmanager/:/etc/alertmanager/"
+      - alertmanager-data:/data
+    command: 
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    ports:
+      - "9093:9093"
     networks:
       - monitoring
   
@@ -31,6 +46,8 @@ services:
       - 9090
     ports:
       - "9090:9090"
+    links:
+      - alertmanager:alertmanager
     networks:
       - monitoring
 
@@ -53,3 +70,4 @@ networks:
 volumes:
   prometheus-data: {}
   grafana-data: {}
+  alertmanager-data: {}
